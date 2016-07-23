@@ -5,5 +5,7 @@ Sample code from [part 1](https://developer.salesforce.com/events/webinars/secur
 ## Topics
 
 CRUD/FLS
+
 Sharing
+
 SOQL injection
