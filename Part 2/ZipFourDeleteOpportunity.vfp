@@ -1,0 +1,4 @@
+<!-- unsecured version of delete Opportunity page -->
+<apex:page controller="ZipFourDeleteOpportunity" action="{!deleteRecord}" >
+{!outputText}
+</apex:page>

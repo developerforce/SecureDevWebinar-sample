@@ -1,0 +1,2 @@
+<apex:page controller="RedirectToGoogleController" action="{!OnPageLoad}">
+</apex:page>

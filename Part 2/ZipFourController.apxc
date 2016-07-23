@@ -1,0 +1,101 @@
+public with sharing class ZipFourController {
+
+    public String searchStr{get; set;}
+    public List<accountWrapper> wAccounts{get; set;}
+    
+    public ZipFourController(){
+        String searchQuery = ApexPages.currentPage().getParameters().get('search');
+        if (searchQuery != null && searchQuery != ''){
+            searchStr = searchQuery;
+            searchAccounts();
+        }
+    }
+    
+    /**
+    /* Wrapper class for Account
+    /* stores standard Account fields, in addition to extended 9 digit zip code
+    **/
+    public Class accountWrapper {      
+        public String name {get; set;}
+        public String description {get; set;}
+        public String fullZip {get; set;}
+        public String revenue {get; set;}
+        public List<oppWrapper> opps {get; set;}
+        
+        public accountWrapper(Account acct){
+            name = acct.Name;
+            description = acct.Description;
+            fullZip = acct.ShippingPostalCode + '-' + getZipFour(acct.ShippingPostalCode);
+            opps = new List<oppWrapper>();
+            if (Schema.SObjectType.Account.fields.AnnualRevenue.isAccessible()){
+                revenue = ZipFourController_Secure.formatCurrency(acct.AnnualRevenue);
+            }
+        }
+        
+        private String getZipFour(String zip){
+            //TODO
+            return '1234';
+        }
+    }
+    
+    /**
+    /* Wrapper class for Opportunity
+    /* Stores standard Opportunity fields
+    **/
+    public Class oppWrapper {
+        public String name {get; set;}
+        public String id {get; set;}
+        public String amount {get; set;}
+        
+        public oppWrapper(Opportunity o){
+            id=o.id;
+            name = o.Name;
+            amount = ZipFourController_Secure.formatCurrency(o.Amount);
+        }
+    }
+    
+    //Helper function to format the currency string
+    public static String formatCurrency(Decimal amt){
+        List<String> args = new String[]{'0','number','###,###,##0'};
+        String s = '$'+String.format(amt.format(), args);
+        return s;
+    }
+    
+    //Searches for Account by name
+    public PageReference searchAccounts(){
+        wAccounts = new List<AccountWrapper>();
+        List<Account> accountsList = new List<Account>();
+        String query = 'SELECT Id, Name, Description, Website, AnnualRevenue, ShippingPostalCode FROM Account WHERE Name LIKE \'%' + String.escapeSingleQuotes(searchStr) + '%\'';
+        accountsList = Database.query(query);
+        
+        List<Opportunity> oppList = [SELECT id,Name, Amount, AccountId FROM Opportunity WHERE AccountId IN :accountsList];
+        
+        for (Account a : accountsList){
+            if (Account.SObjectType.getDescribe().isAccessible()){
+                accountWrapper wAcct = new accountWrapper(a);
+                if (Opportunity.SObjectType.getDescribe().isAccessible()){
+                    for (Opportunity opp : oppList){
+                        if (opp.AccountId == a.Id){
+                            wAcct.opps.add(new oppWrapper(opp));
+                        }
+                    }
+                }
+                wAccounts.add(wAcct);            
+            } 
+        }
+        return null;
+    }
+    
+    @RemoteAction
+    public static Opportunity updateOpp(String id, String oppName) {
+        //CRUD and FLS check
+        if (Opportunity.SObjectType.getDescribe().isAccessible() && Schema.sObjectType.Opportunity.fields.Name.isUpdateable()){
+            Opportunity oppToUpdate = [SELECT id, Name FROM Opportunity WHERE Id = :id];
+            oppToUpdate.Name = oppName;
+            update oppToUpdate;
+            return oppToUpdate;
+        }else {
+            return null;
+        }
+    }
+}

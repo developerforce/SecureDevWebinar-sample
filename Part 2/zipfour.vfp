@@ -1,0 +1,65 @@
+<!-- Secured visualforce page for part 2 -->
+<apex:page controller="ZipFourController">
+<apex:form >
+
+<br/>
+ <apex:inputText value="{!searchStr}" /> <apex:commandButton value="Search" action="{!searchAccounts}"/>
+ <br/><br/>
+ Click on an account name to show its description, if available.<br />
+    <!-- Fix Reflected XSS <b>Search Results for:</b>&nbsp;<apex:outputText value="{!searchStr}" /> -->
+ <b>Search Results for:</b>&nbsp;<apex:outputText escape="false" value="{!searchStr}" />
+ <br/>
+ <apex:pageBlock >
+ <apex:pageblocktable value="{!wAccounts}" var="acc" >
+ <!-- Fix Stored XSS <apex:column headerValue="Account Name" value="{!acc.name}" style="width:200px" onclick="showDesc('{!JSINHTMLENCODE(acc.description)}')" /> -->
+ <apex:column headerValue="Account Name" value="{!acc.name}" style="width:200px" onclick="showDesc('{!acc.description}')" />
+ <apex:column headerValue="Annual Revenue" value="{!acc.revenue}"/>
+ <apex:column headerValue="Opportunities"  >
+  <apex:pageblocktable value="{!acc.opps}" var="opp">
+   <apex:column headerValue="Opportunity Name"><div id="{!opp.id}">{!opp.name}</div></apex:column>
+   <apex:column headerValue="Amount" value="{!opp.amount}"/>
+   <apex:column headerValue="Action">
+       <!-- Fix <a href='/apex/ZipFourDeleteOpportunitySecure?delid={!opp.id}' target="_blank"> Delete </a> -->
+       <a href='/apex/ZipFourDeleteOpportunity?delid={!opp.id}' target="_blank"> Delete </a> |
+       <a href="#" onclick="updateRemoteOpp('{!opp.id}')"> Update </a>
+ </apex:column>
+  </apex:pageblocktable>
+ </apex:column>
+ <apex:column headerValue="Zipcode" >
+ {!acc.fullZip}
+ </apex:column>
+ <apex:column headerValue="Maps">
+      <!-- Fix <a href='/apex/RedirectToGoogle?ret={!acc.fullZip}' target="_blank"> Open in Maps </a> -->
+ <a href='/apex/RedirectToGoogle?ret=https://www.google.com/maps/place/{!acc.fullZip}' target="_blank"> Open in Maps </a>
+ </apex:column>
+</apex:pageblocktable>
+</apex:pageBlock>
+</apex:form>
+<script>
+function showDesc(desc){
+if (desc != null && desc.length > 0){
+    alert(desc)
+   }
+}
+
+function updateRemoteOpp(id){
+    var newName = prompt('Enter new Opportunity name:');
+    if (newName == null || newName == '') return;
+    //DOM XSS update, dangerous innerHTML update
+    document.getElementById(id).innerHTML = newName;
+    //Use this instead
+    //document.getElementById(id).textContent = newName;
+    Visualforce.remoting.Manager.invokeAction(
+        '{!$RemoteAction.ZipFourController.updateOpp}',
+        id, newName,
+        function(result, event){
+            /* also safe to update via Javascript remoting callback
+            if (event.status) { //call sucessfull
+                document.getElementById(id).textContent = result.Name;
+            }
+            */
+        }
+    );  
+}
+</script>
+</apex:page>

@@ -1,0 +1,30 @@
+public with sharing class ZipFourDeleteOpportunity{
+
+public string outputText {get;set;}
+public Opportunity opp {get;set;}
+    
+    public ZipFourDeleteOpportunity(){
+    
+        outputText='';
+        string delid= ApexPages.currentPage().getParameters().get('delid');
+        
+        if (!Schema.sObjectType.Opportunity.fields.Name.isAccessible()){
+          outputText='User does not have Access to Opportunity';
+          return;
+        }
+        
+        opp = [select id, Name from Opportunity where id=:delid];
+        
+    }
+
+     public PageReference deleteRecord(){
+        
+        if (!Opportunity.sObjectType.getDescribe().isDeletable()){
+            outputText='User does not have permission delete Opportunity';
+            return null;
+        }
+        delete opp;
+        outputText='Record Deleted: '+opp.id;
+        return null;
+    }
+}

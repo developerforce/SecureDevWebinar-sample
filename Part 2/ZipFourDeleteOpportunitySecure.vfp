@@ -1,0 +1,8 @@
+<apex:page controller="ZipFourDeleteOpportunity" >
+Are you Sure You want to Delete Record: {!opp.id}?
+<br/>
+<apex:form >
+<apex:commandButton action="{!deleteRecord}" value="Confirm" />
+</apex:form>
+{!outputText}
+</apex:page>

@@ -1,0 +1,24 @@
+<!-- Secured visualforce page for part 1 -->
+<apex:page controller="ZipFourController_1">
+<apex:form >
+
+<br/>
+ <apex:inputText value="{!searchStr}" /> <apex:commandButton value="Search" action="{!searchAccounts}"/>
+ <br/>
+ <apex:pageBlock >
+ <apex:pageblocktable value="{!wAccounts}" var="acc" >
+ <apex:column headerValue="Account Name" value="{!acc.name}"/>
+ <apex:column headerValue="Annual Revenue" value="{!acc.revenue}"/>
+ <apex:column headerValue="Opportunities"  >
+  <apex:pageblocktable value="{!acc.opps}" var="opp">
+   <apex:column headerValue="Opportunity Name" value="{!opp.name}"/>
+   <apex:column headerValue="Amount" value="{!opp.amount}"/>
+  </apex:pageblocktable>
+ </apex:column>
+ <apex:column headerValue="Zipcode" >
+ {!acc.fullZip}
+ </apex:column>
+</apex:pageblocktable>
+</apex:pageBlock>
+</apex:form>
+</apex:page>

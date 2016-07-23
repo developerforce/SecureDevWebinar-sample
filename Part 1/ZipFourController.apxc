@@ -1,0 +1,72 @@
+public with sharing class ZipFourController {
+
+    public String searchStr{get; set;}
+    public List<accountWrapper> wAccounts{get; set;}
+    
+    public Class accountWrapper {      
+        public String name {get; set;}
+        public String fullZip {get; set;}
+        public String revenue {get; set;}
+        public List<oppWrapper> opps {get; set;}
+        
+        public accountWrapper(Account acct){
+            name = acct.Name;
+            fullZip = acct.ShippingPostalCode + '-' + getZipFour(acct.ShippingPostalCode);
+            opps = new List<oppWrapper>();
+            //FLS check
+            if (Schema.SObjectType.Account.fields.AnnualRevenue.isAccessible()){
+                revenue = ZipFourController_Secure.formatCurrency(acct.AnnualRevenue);
+            }
+        }
+        
+        private String getZipFour(String zip){
+            //TODO
+            return '1234';
+        }
+    }
+    
+    public Class oppWrapper {
+        public String name {get; set;}
+        public String amount {get; set;}
+        
+        public oppWrapper(Opportunity o){
+            name = o.Name;
+            amount = ZipFourController.formatCurrency(o.Amount);
+        }
+    }
+    
+    //helper function to format currency into $999,999 format
+    public static String formatCurrency(Decimal amt){
+        List<String> args = new String[]{'0','number','###,###,##0'};
+        String s = '$'+String.format(amt.format(), args);
+        return s;
+    }
+    
+    public PageReference searchAccounts(){
+        wAccounts = new List<AccountWrapper>();
+        List<Account> accountsList = new List<Account>();
+        //SOQL fix
+        String query = 'SELECT Id, Name, Description, Website, AnnualRevenue, ShippingPostalCode FROM Account WHERE Name LIKE \'%' + String.escapeSingleQuotes(searchStr) + '%\'';
+        accountsList = Database.query(query);
+        
+        //get the list of associated opportunities from the account search result
+        List<Opportunity> oppList = [SELECT Name, Amount, AccountId FROM Opportunity WHERE AccountId IN :accountsList];
+
+        for (Account a : accountsList){
+            //CRUD check for Account object
+            if (Account.SObjectType.getDescribe().isAccessible()){
+                accountWrapper wAcct = new accountWrapper(a);
+                //CRUD check for Opportunity object
+                if (Opportunity.SObjectType.getDescribe().isAccessible()){
+                    for (Opportunity opp : oppList){
+                        if (opp.AccountId == a.Id){
+                            wAcct.opps.add(new oppWrapper(opp));
+                        }
+                    }
+                }
+                wAccounts.add(wAcct);            
+            } 
+        }
+        return null;
+    }
+}

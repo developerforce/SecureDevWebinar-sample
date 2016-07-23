@@ -1,0 +1,9 @@
+public with sharing class RedirectToGoogleController {
+    public PageReference OnPageLoad(){
+        string redirect= ApexPages.currentPage().getParameters().get('ret');
+        if(redirect!=null)        
+               return new PageReference(redirect);
+        else return null;
+    }
+
+}
